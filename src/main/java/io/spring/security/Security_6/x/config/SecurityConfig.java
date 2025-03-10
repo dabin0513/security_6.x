@@ -1,5 +1,6 @@
 package io.spring.security.Security_6.x.config;
 
+import io.spring.security.Security_6.x.auth.CustomAuthenticationEntryPoint;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
@@ -21,24 +22,9 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http.authorizeRequests(auth -> auth.anyRequest().authenticated())
-                .formLogin(form -> form
-                        .loginPage("/login")
-                        .loginProcessingUrl("/loginProc") // 사용자 이름과 비밀번호를 검증할 URL 지정 (Form action)
-                        .defaultSuccessUrl("/", true)
-                        .failureUrl("/failed")
-                        .usernameParameter("userId")
-                        .passwordParameter("password")
-                        .successHandler((httpServletRequest, httpServletResponse, authentication) -> {
-                            log.info("authentication: {}", authentication);
-                            httpServletResponse.sendRedirect("/home");
-                        })
-                        .failureHandler((httpServletRequest, httpServletResponse, exception) -> {
-                            log.error("exception: {}", exception);
-                            httpServletResponse.sendRedirect("/login");
-                        })
-                        .permitAll()
-                );
+        http
+                .authorizeHttpRequests(auth -> auth.anyRequest().authenticated())
+                .httpBasic(basic -> basic.authenticationEntryPoint(new CustomAuthenticationEntryPoint()));
 
         return http.build();
     }
