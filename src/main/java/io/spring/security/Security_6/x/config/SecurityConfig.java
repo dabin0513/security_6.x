@@ -9,6 +9,10 @@ import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 
@@ -22,24 +26,22 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.authorizeRequests(auth -> auth.anyRequest().authenticated())
-                .formLogin(form -> form
-                        .loginPage("/login")
-                        .loginProcessingUrl("/loginProc") // 사용자 이름과 비밀번호를 검증할 URL 지정 (Form action)
-                        .defaultSuccessUrl("/", true)
-                        .failureUrl("/failed")
-                        .usernameParameter("userId")
-                        .passwordParameter("password")
-                        .successHandler((httpServletRequest, httpServletResponse, authentication) -> {
-                            log.info("authentication: {}", authentication);
-                            httpServletResponse.sendRedirect("/home");
-                        })
-                        .failureHandler((httpServletRequest, httpServletResponse, exception) -> {
-                            log.error("exception: {}", exception);
-                            httpServletResponse.sendRedirect("/login");
-                        })
-                        .permitAll()
+                .formLogin(Customizer.withDefaults())
+                .rememberMe(rememberMe -> rememberMe
+                        .alwaysRemember(true)                       // true: 체크박스를 선택하지 않아도 언제든 기억하기 인증을 사용한다.
+                        .tokenValiditySeconds(3600)                 // 만료시간: 1시간
+                        .userDetailsService(userDetailsService())   // 사용자 정보
+                        .rememberMeParameter("remember")
+                        .rememberMeCookieName("remember")
+                        .key("security")
                 );
 
         return http.build();
+    }
+
+    @Bean
+    public UserDetailsService userDetailsService() {
+        UserDetails userDetails = User.withUsername("user").password("{noop}1111").roles("USER").build();
+        return new InMemoryUserDetailsManager(userDetails);
     }
 }
