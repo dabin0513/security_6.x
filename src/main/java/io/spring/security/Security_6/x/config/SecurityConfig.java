@@ -21,23 +21,16 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http.authorizeRequests(auth -> auth.anyRequest().authenticated())
-                .formLogin(form -> form
-                        .loginPage("/login")
-                        .loginProcessingUrl("/loginProc") // 사용자 이름과 비밀번호를 검증할 URL 지정 (Form action)
-                        .defaultSuccessUrl("/", true)
-                        .failureUrl("/failed")
-                        .usernameParameter("userId")
-                        .passwordParameter("password")
-                        .successHandler((httpServletRequest, httpServletResponse, authentication) -> {
-                            log.info("authentication: {}", authentication);
-                            httpServletResponse.sendRedirect("/home");
-                        })
-                        .failureHandler((httpServletRequest, httpServletResponse, exception) -> {
-                            log.error("exception: {}", exception);
-                            httpServletResponse.sendRedirect("/login");
-                        })
-                        .permitAll()
+        http.authorizeRequests(auth -> auth
+                        .requestMatchers("/anonymous").hasRole("GUEST")
+                        .requestMatchers("/anonymousContext", "/authentication").permitAll()
+                        .anyRequest().authenticated()
+                )
+                .formLogin(Customizer.withDefaults())
+                .anonymous(anonymous -> anonymous
+                        .principal("guest")
+                        .authorities("ROLE_GUEST")
+
                 );
 
         return http.build();
